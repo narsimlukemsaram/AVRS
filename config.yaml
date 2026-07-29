@@ -1,0 +1,42 @@
+app:
+  window_name: "AI Vehicle Recognition System"
+  display_enabled: true
+
+camera:
+  # Local offline video:
+  source: "data/videos/sample.mp4"
+
+  # USB camera example:
+  # source: 0
+
+  # RTSP example:
+  # source: "rtsp://username:password@192.168.1.100:554/stream"
+
+  loop_local_file: true
+  reconnect_delay_s: 2.0
+  output_width: 720
+  output_height: 405
+
+detector:
+  model_path: "yolov8n.pt"
+  image_size: 640
+  confidence: 0.35
+  iou: 0.45
+  device: "auto"
+
+  # COCO vehicle classes:
+  # 2 = car
+  # 3 = motorcycle
+  # 5 = bus
+  # 7 = truck
+  vehicle_class_ids:
+    - 2
+    - 3
+    - 5
+    - 7
+
+
+tracker:
+  iou_threshold: 0.20
+  maximum_lost_frames: 15
+  minimum_hits: 2

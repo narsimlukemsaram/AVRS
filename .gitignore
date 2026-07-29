@@ -1,0 +1,33 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Environment variables and credentials
+.env
+
+# Generated outputs
+data/images/*
+data/logs/*
+data/summaries/*
+*.csv
+*.log
+
+# Large files
+data/videos/*
+assets/models/*.pt
+assets/models/*.onnx
+assets/models/*.engine
+
+# Keep empty directories
+!data/videos/.gitkeep
+!data/images/.gitkeep
+!data/logs/.gitkeep
+!data/summaries/.gitkeep
+
+requirements-windows-lock.txt
+
+# VS Code local files
+.vscode/*.log

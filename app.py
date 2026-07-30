@@ -9,6 +9,7 @@ from camera.video_source import VideoSource
 from config_loader import load_config
 from perception.colour_estimator import ColourEstimator
 from perception.detector import VehicleDetector
+from perception.motion_estimator import MotionEstimator
 from perception.tracker import VehicleTracker
 from perception.types import Detection
 
@@ -43,9 +44,7 @@ def draw_detection(
 
     track_id = detection.track_id or "UNTRACKED"
 
-    label = (
-        f"{track_id} {detection.label} {detection.confidence:.2f} {detection.colour}"
-    )
+    label = f"{track_id} {detection.label} {detection.confidence:.2f} {detection.colour} {detection.movement}"
 
     text_size, baseline = cv2.getTextSize(
         label,
@@ -151,6 +150,7 @@ def main() -> None:
     detector_config = config["detector"]
     tracker_config = config["tracker"]
     colour_config = config["attributes"]["colour"]
+    motion_config = config["attributes"]["motion"]
 
     source = VideoSource(
         source=camera_config["source"],
@@ -192,6 +192,8 @@ def main() -> None:
     )
 
     colour_estimator = ColourEstimator(colour_config)
+
+    motion_estimator = MotionEstimator(motion_config)
 
     output_width = int(
         camera_config.get(
@@ -272,6 +274,11 @@ def main() -> None:
                 detection.colour = colour_estimator.estimate(
                     frame,
                     detection,
+                )
+
+                detection.movement = motion_estimator.estimate(
+                    detection,
+                    frame_index=frame_index,
                 )
 
             # Stage 4: Draw tracked detections.

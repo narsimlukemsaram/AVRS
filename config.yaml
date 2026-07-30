@@ -48,3 +48,10 @@ attributes:
     central_crop_ratio: 0.20
     resize_width: 48
     resize_height: 48
+
+  motion:
+    enabled: true
+    history_length: 5
+    minimum_history: 3
+    moving_threshold_px_per_frame: 3.0
+    stationary_threshold_px_per_frame: 1.5

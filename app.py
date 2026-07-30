@@ -7,7 +7,9 @@ import cv2
 
 from camera.video_source import VideoSource
 from config_loader import load_config
+from perception.colour_estimator import ColourEstimator
 from perception.detector import VehicleDetector
+from perception.tracker import VehicleTracker
 from perception.types import Detection
 
 BOX_COLOURS: dict[str, tuple[int, int, int]] = {
@@ -15,6 +17,7 @@ BOX_COLOURS: dict[str, tuple[int, int, int]] = {
     "motorcycle": (255, 100, 0),
     "bus": (0, 255, 100),
     "truck": (60, 60, 255),
+    "van": (200, 0, 200),
 }
 
 
@@ -22,7 +25,7 @@ def draw_detection(
     frame,
     detection: Detection,
 ) -> None:
-    """Draw one vehicle bounding box and label."""
+    """Draw one tracked vehicle bounding box and label."""
     x1, y1, x2, y2 = detection.bbox
 
     box_colour = BOX_COLOURS.get(
@@ -38,7 +41,11 @@ def draw_detection(
         2,
     )
 
-    label = f"{detection.label} {detection.confidence:.2f}"
+    track_id = detection.track_id or "UNTRACKED"
+
+    label = (
+        f"{track_id} {detection.label} {detection.confidence:.2f} {detection.colour}"
+    )
 
     text_size, baseline = cv2.getTextSize(
         label,
@@ -49,7 +56,10 @@ def draw_detection(
 
     text_width, text_height = text_size
 
-    label_top = max(0, y1 - text_height - baseline - 8)
+    label_top = max(
+        0,
+        y1 - text_height - baseline - 8,
+    )
 
     cv2.rectangle(
         frame,
@@ -62,7 +72,10 @@ def draw_detection(
     cv2.putText(
         frame,
         label,
-        (x1 + 4, max(text_height + 2, y1 - 5)),
+        (
+            x1 + 4,
+            max(text_height + 2, y1 - 5),
+        ),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.5,
         (0, 0, 0),
@@ -76,7 +89,7 @@ def draw_summary(
     detections: list[Detection],
     fps: float,
 ) -> None:
-    """Draw vehicle counts and processing speed."""
+    """Draw tracked vehicle counts and processing speed."""
     counts = Counter(detection.label for detection in detections)
 
     summary_lines = [
@@ -85,6 +98,7 @@ def draw_summary(
         f"Motorcycles: {counts.get('motorcycle', 0)}",
         f"Buses: {counts.get('bus', 0)}",
         f"Trucks: {counts.get('truck', 0)}",
+        f"Vans: {counts.get('van', 0)}",
         f"FPS: {fps:.1f}",
     ]
 
@@ -96,7 +110,10 @@ def draw_summary(
     cv2.rectangle(
         overlay,
         (8, 8),
-        (8 + panel_width, 8 + panel_height),
+        (
+            8 + panel_width,
+            8 + panel_height,
+        ),
         (0, 0, 0),
         -1,
     )
@@ -126,11 +143,14 @@ def draw_summary(
 
 
 def main() -> None:
+    """Run the modular vehicle detection and tracking application."""
     config = load_config()
 
     app_config = config["app"]
     camera_config = config["camera"]
     detector_config = config["detector"]
+    tracker_config = config["tracker"]
+    colour_config = config["attributes"]["colour"]
 
     source = VideoSource(
         source=camera_config["source"],
@@ -149,6 +169,29 @@ def main() -> None:
     )
 
     detector = VehicleDetector(detector_config)
+
+    tracker = VehicleTracker(
+        iou_threshold=float(
+            tracker_config.get(
+                "iou_threshold",
+                0.20,
+            )
+        ),
+        maximum_lost_frames=int(
+            tracker_config.get(
+                "maximum_lost_frames",
+                15,
+            )
+        ),
+        minimum_hits=int(
+            tracker_config.get(
+                "minimum_hits",
+                2,
+            )
+        ),
+    )
+
+    colour_estimator = ColourEstimator(colour_config)
 
     output_width = int(
         camera_config.get(
@@ -183,6 +226,7 @@ def main() -> None:
 
     previous_time = time.perf_counter()
     smoothed_fps = 0.0
+    frame_index = 0
 
     try:
         while True:
@@ -205,25 +249,46 @@ def main() -> None:
 
             frame = cv2.resize(
                 frame,
-                (output_width, output_height),
+                (
+                    output_width,
+                    output_height,
+                ),
                 interpolation=cv2.INTER_LINEAR,
             )
 
+            frame_index += 1
+
+            # Stage 1: Detect vehicles in the raw frame.
             detections = detector.predict(frame)
 
-            for detection in detections:
+            # Stage 2: Assign persistent vehicle IDs.
+            tracked_detections = tracker.update(
+                detections,
+                frame_index=frame_index,
+            )
+
+            # Stage 3: Estimate colour before drawing overlays.
+            for detection in tracked_detections:
+                detection.colour = colour_estimator.estimate(
+                    frame,
+                    detection,
+                )
+
+            # Stage 4: Draw tracked detections.
+            for detection in tracked_detections:
                 draw_detection(
                     frame,
                     detection,
                 )
 
             current_time = time.perf_counter()
+
             elapsed_time = max(
                 current_time - previous_time,
                 1e-6,
             )
-            previous_time = current_time
 
+            previous_time = current_time
             current_fps = 1.0 / elapsed_time
 
             if smoothed_fps == 0.0:
@@ -233,7 +298,7 @@ def main() -> None:
 
             draw_summary(
                 frame,
-                detections,
+                tracked_detections,
                 smoothed_fps,
             )
 
@@ -245,7 +310,10 @@ def main() -> None:
 
                 key = cv2.waitKey(1) & 0xFF
 
-                if key in (27, ord("q")):
+                if key in (
+                    27,
+                    ord("q"),
+                ):
                     break
 
     except KeyboardInterrupt:
@@ -254,6 +322,7 @@ def main() -> None:
     finally:
         source.release()
         cv2.destroyAllWindows()
+
         print("\n[Application] Closed safely")
 
 

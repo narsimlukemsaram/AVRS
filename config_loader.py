@@ -39,6 +39,7 @@ def load_config(path: str | Path = "config.yaml") -> dict[str, Any]:
         "camera",
         "detector",
         "tracker",
+        "attributes",
     )
 
     missing_sections = [

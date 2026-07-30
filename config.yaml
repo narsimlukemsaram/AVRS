@@ -35,8 +35,16 @@ detector:
     - 5
     - 7
 
-
 tracker:
   iou_threshold: 0.20
   maximum_lost_frames: 15
   minimum_hits: 2
+
+attributes:
+  colour:
+    enabled: true
+    history_length: 12
+    minimum_box_side: 20
+    central_crop_ratio: 0.20
+    resize_width: 48
+    resize_height: 48

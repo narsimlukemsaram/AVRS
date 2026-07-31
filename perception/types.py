@@ -4,7 +4,7 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 
-@dataclass(slots=True)
+@dataclass
 class Detection:
     """
     Represents one detected or tracked vehicle.

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from perception.motion_estimator import MotionEstimator
 from perception.types import Detection
 

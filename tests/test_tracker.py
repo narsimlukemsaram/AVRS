@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from perception.tracker import VehicleTracker, calculate_iou
 from perception.types import Detection
 

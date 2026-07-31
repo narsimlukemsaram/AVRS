@@ -85,7 +85,7 @@ class MotionEstimatorProtocol(Protocol):
         """Clear all motion histories."""
 
 
-@dataclass(slots=True)
+@dataclass
 class PipelineResult:
     """
     Results produced for one successfully processed frame.

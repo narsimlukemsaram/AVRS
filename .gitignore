@@ -9,17 +9,20 @@ __pycache__/
 .env
 
 # Generated outputs
+runs/
 data/images/*
 data/logs/*
 data/summaries/*
 *.csv
 *.log
 
-# Large files
+# Large model files
+*.pt
+*.onnx
+*.engine
+
+# Video datasets / test videos
 data/videos/*
-assets/models/*.pt
-assets/models/*.onnx
-assets/models/*.engine
 
 # Keep empty directories
 !data/videos/.gitkeep
@@ -27,7 +30,9 @@ assets/models/*.engine
 !data/logs/.gitkeep
 !data/summaries/.gitkeep
 
+# Local dependency lock/snapshot
 requirements-windows-lock.txt
+requirements-before-yolo26.txt
 
 # VS Code local files
 .vscode/*.log

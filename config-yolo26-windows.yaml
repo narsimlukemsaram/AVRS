@@ -1,0 +1,62 @@
+app:
+  window_name: "Autonomous Visual Recognition System"
+  display_enabled: true
+
+camera:
+  # Offline aerial video used for the current experiment
+  source: "data/videos/AVRS.mp4"
+
+  # USB camera example:
+  # source: 0
+
+  # RTSP camera example:
+  # source: "rtsp://username:password@192.168.1.100:554/stream"
+
+  # Disable looping for reproducible evaluation
+  loop_local_file: false
+  reconnect_delay_s: 2.0
+
+  # AVRS processing resolution
+  output_width: 720
+  output_height: 405
+
+detector:
+  model_path: "yolo26n.pt"
+  image_size: 416
+  confidence: 0.30
+  iou: 0.45
+
+  # Explicitly use NVIDIA GPU 0
+  device: "0"
+
+  # COCO ground-vehicle classes:
+  # 2 = car
+  # 3 = motorcycle
+  # 5 = bus
+  # 7 = truck
+  vehicle_class_ids:
+    - 2
+    - 3
+    - 5
+    - 7
+
+tracker:
+  iou_threshold: 0.20
+  maximum_lost_frames: 15
+  minimum_hits: 2
+
+attributes:
+  colour:
+    enabled: true
+    history_length: 12
+    minimum_box_side: 20
+    central_crop_ratio: 0.20
+    resize_width: 48
+    resize_height: 48
+
+  motion:
+    enabled: true
+    history_length: 5
+    minimum_history: 3
+    moving_threshold_px_per_frame: 3.0
+    stationary_threshold_px_per_frame: 1.5
